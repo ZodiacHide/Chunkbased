@@ -3,6 +3,7 @@ from PIL import ImageGrab
 import pytesseract as pyt
 import numpy as np
 import time
+pyt.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
 
 """
 This program is designed for Coordinates HUD from VanillaTweaks: https://vanillatweaks.net/
@@ -16,7 +17,7 @@ def checkWindowName(window_id: int) -> bool:
     Checks if target window is Minecraft.
 
     ### Parameters 
-    window_id : int
+    window_id: int
         ID of target window"""
     
     name_window = GetWindowText(window_id)
@@ -43,10 +44,10 @@ def takeScreenshot(bbox: tuple[int, int, int, int]):
     """
     Takes an image capture of active window. Only works with windowed @2560x1440(2576x1426)
     ### Parameters
-        bbox : tuple
+        bbox: tuple
             Bounding box of active window
     ### Returns
-        Image : PIL Image"""
+        Image: PIL Image"""
     
     expected_width, expected_height = 2576, 1426
     # screengrab with bounding box
@@ -73,15 +74,24 @@ def takeScreenshot(bbox: tuple[int, int, int, int]):
 
     # refine image
     width, height = bot_image.size
-    coords_image = bot_image.crop((width/4, height/2, width - width/4, height - height/4))
+    coords_image = bot_image.crop((width/3 + width/22, height/2, width - width/3 - width/7, height - height/4))
 
     # coords_image.show()
     return coords_image
 
-def getCoords():
+def getCoords(image):
     """
-    Get the coordinates of VanillaTweaks HUD"""
-    pass
+    Get the coordinates of VanillaTweaks HUD with image.
+    
+    ### Parameters
+        image: Image
+        
+    ### Returns
+        coordinates: np.ndarray()"""
+    
+    image_text = pyt.image_to_string(image, lang='eng')
+
+    return image_text
 
 while True:
     window = GetForegroundWindow()
@@ -92,6 +102,8 @@ while True:
         # Take screenshot to find coords
         SetForegroundWindow(window)
         bbox = GetWindowRect(window)
-        takeScreenshot(bbox)
+        image = takeScreenshot(bbox)
+        coords = getCoords(image)
+        print(coords)
         
     time.sleep(1)
