@@ -40,7 +40,7 @@ def checkWindowName(window_id: int) -> bool:
     else:
         return False
 
-def takeScreenshot(bbox: tuple[int, int, int, int]):
+def takeScreenshot(bbox: tuple[int, int, int, int]) -> ImageGrab:
     """
     Takes an image capture of active window. Only works with windowed @2560x1440(2576x1426)
     ### Parameters
@@ -79,7 +79,7 @@ def takeScreenshot(bbox: tuple[int, int, int, int]):
     # coords_image.show()
     return coords_image
 
-def getCoords(image):
+def getCoords(image: ImageGrab.grab) -> str:
     """
     Get the coordinates of VanillaTweaks HUD with image.
     
@@ -87,11 +87,43 @@ def getCoords(image):
         image: Image
         
     ### Returns
-        coordinates: np.ndarray()"""
+        image_text: str"""
     
     image_text = pyt.image_to_string(image, lang='eng')
 
     return image_text
+
+def processCoords(coords: str) -> np.ndarray:
+    """
+    Returns X, Y and Z values from image.
+    
+    ### Parameters
+        coords: str
+    ### Returns
+        np.array([x_pos, y_pos, z_pos]): np.ndarray
+    ### Variables
+        x_pos: int
+            X position of player
+        y_pos: int
+            Y position of player
+        z_pos: int
+            Z position of player"""
+    
+    # split coordinate string with spaces
+    # if input is correct should have 3 indecies
+    coords_split = coords.split(' ')
+    if len(coords_split) < 3:
+        return False
+    
+    try:
+        x_pos = int(coords_split[0])
+        y_pos = int(coords_split[1])
+        z_pos = int(coords_split[2])
+    except ValueError:
+        return False
+    else:
+        return np.array([x_pos, y_pos, z_pos])
+
 
 while True:
     window = GetForegroundWindow()
@@ -104,6 +136,8 @@ while True:
         bbox = GetWindowRect(window)
         image = takeScreenshot(bbox)
         coords = getCoords(image)
-        print(coords)
+        res = processCoords(coords)
+        if res is not False:
+            print(coords)
         
     time.sleep(1)
