@@ -1,8 +1,8 @@
-import time
-import numpy as np
 from win32gui import GetWindowText, GetForegroundWindow, SetForegroundWindow, GetWindowRect
 from PIL import ImageGrab
-import cv2
+import pytesseract as pyt
+import numpy as np
+import time
 
 def checkWindowName(window_id: int) -> bool:
     '''
@@ -34,26 +34,37 @@ def checkWindowName(window_id: int) -> bool:
 
 def takeScreenshot(bbox: tuple[int, int, int, int]):
     '''
-    Takes an image capture of active window.
+    Takes an image capture of active window. Only works with windowed @2560x1440(2576x1426)
     ### Parameters
         bbox : tuple
             Bounding box of active window
     ### Returns
         Image : PIL Image'''
     
+    expected_width, expected_height = 2576, 1426
     image = ImageGrab.grab(bbox)
     width, height = image.size
 
-    # print(height)
-    # exit()
-    lower = 0
-    upper = height
-    left, right = 0, width
-    box = (left, lower, right, upper)
-    image_crop = image.crop(box)
+    if width != expected_width:
+        print("WARNING: Width of window is not 2576px, program will not work as expected")
+    if height != expected_height:
+        print("WARNING: Height of window is not 1426, program will not work as expected")
 
-    image_crop.show()
-    return image_crop
+    '''
+    crop box is created in top left corner.
+    box = [left, upper, right, lower]
+    left - how far from the left to start
+    right - how far from the left to stop
+    upper - how far from top to start
+    lower - how far from top to stop'''
+
+    bot_image = image.crop((width/3, 3*height/4, width - width/3, height))
+
+    width, height = bot_image.size
+    coords_image = bot_image.crop((width/4, height/2, width - width/4, height - height/4))
+
+    coords_image.show()
+    return coords_image
         
 while True:
     window = GetForegroundWindow()
