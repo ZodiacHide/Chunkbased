@@ -79,7 +79,7 @@ def takeScreenshot(bbox: tuple[int, int, int, int]) -> ImageGrab:
     # coords_image.show()
     return coords_image
 
-def getCoords(image: ImageGrab.grab) -> str:
+def getImageText(image: ImageGrab.grab) -> str:
     """
     Get the coordinates of VanillaTweaks HUD with image.
     
@@ -93,7 +93,7 @@ def getCoords(image: ImageGrab.grab) -> str:
 
     return image_text
 
-def processCoords(coords: str) -> np.ndarray:
+def getCoords(coords: str) -> np.ndarray:
     """
     Returns X, Y and Z values from image.
     
@@ -124,7 +124,6 @@ def processCoords(coords: str) -> np.ndarray:
     else:
         return np.array([x_pos, y_pos, z_pos])
 
-
 while True:
     window = GetForegroundWindow()
 
@@ -135,8 +134,8 @@ while True:
         SetForegroundWindow(window)
         bbox = GetWindowRect(window)
         image = takeScreenshot(bbox)
-        coords = getCoords(image)
-        res = processCoords(coords)
+        coords = getImageText(image)
+        res = getCoords(coords)
         if res is not False:
             print(coords)
         
