@@ -124,6 +124,27 @@ def getCoords(coords: str) -> np.ndarray:
     else:
         return np.array([x_pos, y_pos, z_pos])
 
+def processCoords(coords: np.ndarray) -> np.ndarray:
+    """
+    Handles significant coordinate variances to keep consistency in movement.
+    
+    ### Parameters
+        coords: np.ndarray([first_coords, second_coord, third_coord])"""
+    
+    first_coord, second_coord, third_coord = coords
+    if all((isinstance(first_coord, np.ndarray), isinstance(second_coord, np.ndarray), isinstance(third_coord, np.ndarray))):
+        print(coords)
+        return True
+    
+    print("Exiting")
+    print(coords)
+    return False
+
+if __name__=='__main__':
+    third_coord = False
+    second_coord = False
+    first_coord = False
+
 while True:
     window = GetForegroundWindow()
 
@@ -132,11 +153,20 @@ while True:
     if window_state:
         # Take screenshot to find coords
         SetForegroundWindow(window)
+        # bounding box of window
         bbox = GetWindowRect(window)
+        # screenshot of window
         image = takeScreenshot(bbox)
+        # coordinate text from screenshot
         coords = getImageText(image)
+
         res = getCoords(coords)
         if res is not False:
             print(coords)
-        
+
+            first_coord = getCoords(coords)
+            processCoords((first_coord, second_coord, third_coord))
+            third_coord = second_coord
+            second_coord = first_coord
+
     time.sleep(1)
