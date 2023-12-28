@@ -4,6 +4,13 @@ import pytesseract as pyt
 import numpy as np
 import time
 
+"""
+This program is designed for Coordinates HUD from VanillaTweaks: https://vanillatweaks.net/
+
+Created by https://github.com/ZodiacHide
+Repository: https://github.com/ZodiacHide/Chunkbased
+"""
+
 def checkWindowName(window_id: int) -> bool:
     """
     Checks if target window is Minecraft.
@@ -73,7 +80,7 @@ def takeScreenshot(bbox: tuple[int, int, int, int]):
 
 def getCoords():
     """
-    """
+    Get the coordinates of VanillaTweaks HUD"""
     pass
 
 while True:
