@@ -5,12 +5,12 @@ import numpy as np
 import time
 
 def checkWindowName(window_id: int) -> bool:
-    '''
+    """
     Checks if target window is Minecraft.
 
     ### Parameters 
     window_id : int
-        ID of target window'''
+        ID of target window"""
     
     name_window = GetWindowText(window_id)
     
@@ -33,16 +33,18 @@ def checkWindowName(window_id: int) -> bool:
         return False
 
 def takeScreenshot(bbox: tuple[int, int, int, int]):
-    '''
+    """
     Takes an image capture of active window. Only works with windowed @2560x1440(2576x1426)
     ### Parameters
         bbox : tuple
             Bounding box of active window
     ### Returns
-        Image : PIL Image'''
+        Image : PIL Image"""
     
     expected_width, expected_height = 2576, 1426
+    # screengrab with bounding box
     image = ImageGrab.grab(bbox)
+    # image width and height
     width, height = image.size
 
     if width != expected_width:
@@ -58,14 +60,22 @@ def takeScreenshot(bbox: tuple[int, int, int, int]):
     upper - how far from top to start
     lower - how far from top to stop'''
 
+    # bottom quarter of image
+    # middle third of image
     bot_image = image.crop((width/3, 3*height/4, width - width/3, height))
 
+    # refine image
     width, height = bot_image.size
     coords_image = bot_image.crop((width/4, height/2, width - width/4, height - height/4))
 
-    coords_image.show()
+    # coords_image.show()
     return coords_image
-        
+
+def getCoords():
+    """
+    """
+    pass
+
 while True:
     window = GetForegroundWindow()
 
