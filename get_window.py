@@ -11,6 +11,8 @@ This program is designed for Coordinates HUD from VanillaTweaks: https://vanilla
 Created by https://github.com/ZodiacHide
 Repository: https://github.com/ZodiacHide/Chunkbased
 """
+class UnknownVersionError(TypeError):
+    pass
 
 def checkWindowName(window_id: int) -> bool:
     """
@@ -35,8 +37,7 @@ def checkWindowName(window_id: int) -> bool:
 
         if len(parsed_version) == 3 and np.all(isinstance(i, int) for i in parsed_version):
             return True
-        print("NOT VERSION")
-        return False
+        raise UnknownVersionError("Attempted to find coordinates of unknown Minecraft version.")
     else:
         return False
 
@@ -124,23 +125,59 @@ def getCoords(coords: str) -> np.ndarray:
     else:
         return np.array([x_pos, y_pos, z_pos])
 
-def processCoords(coords: np.ndarray) -> np.ndarray:
+def processCoords(coords: np.ndarray, incorrect_coords_counter: int) -> np.ndarray:
     """
-    Handles significant coordinate variances to keep consistency in movement.
+    Returns current coordinate if no significant coordinate variances to allow for continuity.
     
     ### Parameters
         coords: np.ndarray([first_coords, second_coord, third_coord])"""
     
     first_coord, second_coord, third_coord = coords
-    if all((isinstance(first_coord, np.ndarray), isinstance(second_coord, np.ndarray), isinstance(third_coord, np.ndarray))):
-        print(coords)
-        return True
-    
-    print("Exiting")
-    print(coords)
-    return False
+    # Verify all coordinates are arrays
+    if not all((isinstance(first_coord, np.ndarray), isinstance(second_coord, np.ndarray), isinstance(third_coord, np.ndarray))):
+        return first_coord, incorrect_coords_counter
+
+    # All coordinates are arrays
+    first_coord: np.ndarray; second_coord: np.ndarray; third_coord: np.ndarray
+    coords_average = (second_coord+third_coord)/2
+
+    # If fail to be close enough to average position too many times
+    # assume player has travelled too fast for program and reset to current pos
+    if incorrect_coords_counter > 2:
+        second_coord, third_coord = first_coord, first_coord 
+        incorrect_coords_counter = 0
+        print(f"Resetting position to {first_coord}")
+        return first_coord, incorrect_coords_counter
+    for i, value in enumerate(first_coord):
+        # Quite frequently 0 gets interpreted as 6 or 8
+        # This is horrible
+        if (abs(abs(abs(value) - abs(coords_average[i])) - 6) < 3 or abs(abs(abs(value) - abs(coords_average[i])) - 8) < 3 or
+            abs(abs(abs(value) - abs(coords_average[i])) - 60) < 3 or abs(abs(abs(value) - abs(coords_average[i])) - 80) < 3
+            or abs(abs(abs(value) - abs(coords_average[i])) - 600) < 3 or abs(abs(abs(value) - abs(coords_average[i])) - 800) < 3 or
+            abs(abs(abs(value) - abs(coords_average[i])) - 6000) < 3 or abs(abs(abs(value) - abs(coords_average[i])) - 8000) < 3):
+            incorrect_coords_counter = 0
+            print("Bad zero reading")
+            return first_coord, incorrect_coords_counter
+        if value > 2*coords_average[i]:
+            print(f"{axis[i]}={value} is very far away from average coordinate {axis[i]}={coords_average[i]}")
+            incorrect_coords_counter += 1
+            print(incorrect_coords_counter)
+            # ignore current position, assume it's wrong
+            # assume second and third are good coords
+            return second_coord, incorrect_coords_counter
+        if abs(abs(value) - abs(coords_average[i])) > 16:
+            print(f"{axis[i]}={value} is too far away from average coordinate {axis[i]}={coords_average[i]}")
+            incorrect_coords_counter += 1
+            print(incorrect_coords_counter)
+            # ignore current position, assume it's wrong
+            # assume second and third are good coords
+            return second_coord, incorrect_coords_counter
+        
+    return first_coord, incorrect_coords_counter
 
 if __name__=='__main__':
+    axis = np.array(['X', 'Y', 'Z'])
+    incorrect_coords_counter = 0
     third_coord = False
     second_coord = False
     first_coord = False
@@ -160,13 +197,16 @@ while True:
         # coordinate text from screenshot
         coords = getImageText(image)
 
-        res = getCoords(coords)
-        if res is not False:
-            print(coords)
-
-            first_coord = getCoords(coords)
-            processCoords((first_coord, second_coord, third_coord))
-            third_coord = second_coord
-            second_coord = first_coord
-
-    time.sleep(1)
+        first_coord = getCoords(coords)
+        if first_coord is not False:
+            if not np.array_equal(first_coord, second_coord) and not np.array_equal(first_coord, second_coord):
+                result, incorrect_coords_counter = processCoords((first_coord, second_coord, third_coord), incorrect_coords_counter)
+                third_coord = second_coord
+                second_coord = result
+                print(result)
+                print(coords)
+                print(first_coord)
+            else:
+                print("Standing still")
+                
+    time.sleep(0.5)
