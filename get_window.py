@@ -43,6 +43,7 @@ def check_window_name_is_minecraft(window_id: int) -> bool:
             return True
         raise UnknownVersionError(f"Attempted to find coordinates of unknown window or Minecraft version. {name_window} is unknown")
     else:
+        print("Target window is not Minecraft.")
         return False
 
 def get_screenshot_active_window(bbox: tuple[int, int, int, int]) -> Image.Image:
@@ -173,14 +174,14 @@ def get_current_coordinates_error_handling(coords: tuple[Union[np.ndarray, bool]
         if value > 2*coords_average[i]:
             print(f"{axis[i]}={value} is very far away from average coordinate {axis[i]}={coords_average[i]}")
             incorrect_coords_counter += 1
-            print(incorrect_coords_counter)
+            print(f"{incorrect_coords_counter} conescutive fails.")
             # ignore current position, assume it's wrong
             # assume second and third are good coords
             return second_coord, incorrect_coords_counter
         if abs(abs(value) - abs(coords_average[i])) > 16:
             print(f"{axis[i]}={value} is too far away from average coordinate {axis[i]}={coords_average[i]}")
             incorrect_coords_counter += 1
-            print(incorrect_coords_counter)
+            print(f"{incorrect_coords_counter} conescutive fails.")
             # ignore current position, assume it's wrong
             # assume second and third are good coords
             return second_coord, incorrect_coords_counter
@@ -192,8 +193,10 @@ def check_player_standing_still(first_coord: np.ndarray, second_coord: np.ndarra
     Checks if the player is standing still.
     """
     if np.array_equal(first_coord, second_coord) and np.array_equal(first_coord, third_coord):
+        print("Player is standing still")
         return True
     else:
+        print("Player is moving")
         return False
 
 def set_new_coordinates_if_moving(first_coord: np.ndarray, second_coord: np.ndarray, 
@@ -213,7 +216,6 @@ def set_new_coordinates_if_moving(first_coord: np.ndarray, second_coord: np.ndar
     # player standing still
     # return first_coord
     elif is_player_standing_still:
-        print("Standing still")
         return first_coord, first_coord, incorrect_coords_counter
     
     # player is not moving
