@@ -113,13 +113,13 @@ def get_coordinate_string_from_image(image: Image.Image) -> str:
 
 def get_cardinal_char_from_image_colour(image: Image.Image) -> str:
     """
-    Get the coordinates of VanillaTweaks HUD with image.
+    Get the cardinal direction from VanillaTweaks HUD with image.
     
     ### Parameters
         ``image``: PIL style image of active Minecraft window.
         
     ### Returns
-        ``image_text``: String containing player's X, Y and Z coordinates.
+        ``image_text``: String containing player's cardinal viewing direction.
     """
     ## Image preprocessing
     # Convert PIL Image to OpenCV format
@@ -146,6 +146,9 @@ def get_cardinal_char_from_image_colour(image: Image.Image) -> str:
     return image_text
 
 def get_cardinal_from_string(coords: str) -> Union[str, bool]:
+    """
+    Returns cardinal direction from image text.
+    """
     # split coordinate string with spaces
     # if input is correct should have 3 indecies
     coords_split = coords.split(' ')
@@ -162,7 +165,7 @@ def get_cardinal_from_string(coords: str) -> Union[str, bool]:
 
 def get_coordinate_from_string(coords: str) -> Union[np.ndarray, bool]:
     """
-    Returns X, Y and Z values from image.
+    Returns X, Y and Z values from image text.
     
     ### Parameters
         ``coords``: String containing coordinates from OCR.
