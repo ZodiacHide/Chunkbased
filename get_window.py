@@ -2,11 +2,14 @@ from win32gui import GetWindowText, GetForegroundWindow, SetForegroundWindow, Ge
 from PIL import ImageGrab
 import pytesseract as pyt
 import numpy as np
+import cv2
 import time
 pyt.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
 
 """
-This program is designed for Coordinates HUD from VanillaTweaks: https://vanillatweaks.net/
+This program is designed for use with Coordinates HUD from VanillaTweaks: https://vanillatweaks.net/
+
+Minecraft OCR data by xHayden: https://github.com/xHayden/Minecraft-OCR
 
 Created by https://github.com/ZodiacHide
 Repository: https://github.com/ZodiacHide/Chunkbased
@@ -37,7 +40,7 @@ def checkWindowName(window_id: int) -> bool:
 
         if len(parsed_version) == 3 and np.all(isinstance(i, int) for i in parsed_version):
             return True
-        raise UnknownVersionError("Attempted to find coordinates of unknown Minecraft version.")
+        raise UnknownVersionError(f"Attempted to find coordinates of unknown window or Minecraft version. {name_window} is unknown")
     else:
         return False
 
@@ -90,8 +93,16 @@ def getImageText(image: ImageGrab.grab) -> str:
     ### Returns
         image_text: str"""
     
-    image_text = pyt.image_to_string(image, lang='eng')
+    ## Image preprocessing
+    # Convert PIL Image to OpenCV format (BGR)
+    open_cv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR) 
+    # Convert the image to grayscale
+    gray_image = cv2.cvtColor(open_cv_image, cv2.COLOR_BGR2GRAY)
+    # Apply thresholding to emphasize digits
+    _, thresh_image = cv2.threshold(gray_image, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
 
+    image_text = pyt.image_to_string(thresh_image, lang='mc', config='--psm 6 tessedit_char_whitelist=0123456789')   
+    
     return image_text
 
 def getCoords(coords: str) -> np.ndarray:
@@ -149,15 +160,6 @@ def processCoords(coords: np.ndarray, incorrect_coords_counter: int) -> np.ndarr
         print(f"Resetting position to {first_coord}")
         return first_coord, incorrect_coords_counter
     for i, value in enumerate(first_coord):
-        # Quite frequently 0 gets interpreted as 6 or 8
-        # This is horrible
-        if (abs(abs(abs(value) - abs(coords_average[i])) - 6) < 3 or abs(abs(abs(value) - abs(coords_average[i])) - 8) < 3 or
-            abs(abs(abs(value) - abs(coords_average[i])) - 60) < 3 or abs(abs(abs(value) - abs(coords_average[i])) - 80) < 3
-            or abs(abs(abs(value) - abs(coords_average[i])) - 600) < 3 or abs(abs(abs(value) - abs(coords_average[i])) - 800) < 3 or
-            abs(abs(abs(value) - abs(coords_average[i])) - 6000) < 3 or abs(abs(abs(value) - abs(coords_average[i])) - 8000) < 3):
-            incorrect_coords_counter = 0
-            print("Bad zero reading")
-            return first_coord, incorrect_coords_counter
         if value > 2*coords_average[i]:
             print(f"{axis[i]}={value} is very far away from average coordinate {axis[i]}={coords_average[i]}")
             incorrect_coords_counter += 1
@@ -204,8 +206,6 @@ while True:
                 third_coord = second_coord
                 second_coord = result
                 print(result)
-                print(coords)
-                print(first_coord)
             else:
                 print("Standing still")
                 
