@@ -3,9 +3,12 @@ from PIL import ImageGrab, Image
 import numpy as np
 import cv2
 import time
+import matplotlib.pyplot as plt
 from typing import Union
 import pytesseract as pyt
 pyt.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
+
+from minimap import MinimapPlotter
 
 """
 This program is designed for use with Coordinates HUD from VanillaTweaks: https://vanillatweaks.net/
@@ -225,13 +228,16 @@ def set_new_coordinates_if_moving(first_coord: np.ndarray, second_coord: np.ndar
         second_coord, incorrect_coords_counter = get_current_coordinates_error_handling((first_coord, second_coord, third_coord), incorrect_coords_counter)
         print(second_coord)
         return second_coord, third_coord, incorrect_coords_counter
-    
+
 if __name__=='__main__':
     axis = np.array(['X', 'Y', 'Z'])
     incorrect_coords_counter = 0
     third_coord = False
     second_coord = False
     first_coord = False
+
+    # Initiate Minimap
+    map = MinimapPlotter()
 
 while True:
     window = GetForegroundWindow()
@@ -251,17 +257,13 @@ while True:
         first_coord = get_coordinate_from_string(coords)
         if first_coord is not None:
             try:
+                # New player coordinates
                 second_coord, third_coord, incorrect_coords_counter = set_new_coordinates_if_moving(first_coord, second_coord, third_coord, incorrect_coords_counter)
+                # Update player position
+                map.update_minimap(second_coord, chunk_range=2)
             except TypeError:
                 print("Something wrong")
                 pass
 
-        # if first_coord is not False:
-            # if not check_player_standing_still(first_coord, second_coord, third_coord):
-            #     second_coord, incorrect_coords_counter = get_current_coordinates_error_handling((first_coord, second_coord, third_coord), incorrect_coords_counter)
-            #     third_coord = second_coord
-            #     print(second_coord)   
-            # else:
-            #     print("Standing still")
-                
-    time.sleep(0.5)
+    plt.pause(0.1)
+    time.sleep(0.1)
