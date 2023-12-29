@@ -10,7 +10,7 @@ class MinimapPlotter:
         self.ax = self.fig.add_subplot(1, 1, 1)
         self.ax.set_aspect('equal', adjustable='box')
     
-    def update_minimap(self, first_coord: np.ndarray, chunk_range: int) -> None:
+    def update_minimap(self, first_coord: np.ndarray, chunk_range: int, direction: str) -> None:
         """
         Update player's position on the minimap
         """
@@ -48,3 +48,19 @@ class MinimapPlotter:
         # Update the scatter plot
         self.ax.set_aspect('equal', adjustable='box')
         self.ax.scatter(self.x_pos, self.z_pos)
+
+        arrow_length = 3  # Length of the arrow
+
+        # Plot arrow
+        # None direction is handled
+        try:
+            if direction.upper() == 'N':
+                self.ax.annotate('', xy=(self.x_pos, self.z_pos - arrow_length), xytext=(self.x_pos, self.z_pos), arrowprops=dict(facecolor='cyan', arrowstyle='->'))
+            elif direction.upper() == 'S':
+                self.ax.annotate('', xy=(self.x_pos, self.z_pos + arrow_length), xytext=(self.x_pos, self.z_pos), arrowprops=dict(facecolor='cyan', arrowstyle='->'))
+            elif direction.upper() == 'W':
+                self.ax.annotate('', xy=(self.x_pos - arrow_length, self.z_pos), xytext=(self.x_pos, self.z_pos), arrowprops=dict(facecolor='cyan', arrowstyle='->'))
+            elif direction.upper() == 'E':
+                self.ax.annotate('', xy=(self.x_pos + arrow_length, self.z_pos), xytext=(self.x_pos, self.z_pos), arrowprops=dict(facecolor='cyan', arrowstyle='->'))
+        except AttributeError:
+            pass

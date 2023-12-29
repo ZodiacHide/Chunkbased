@@ -82,7 +82,7 @@ def get_screenshot_active_window(bbox: tuple[int, int, int, int]) -> Image.Image
 
     # refine image
     width, height = bot_image.size
-    coords_image = bot_image.crop((width/3 + width/22, height/2, width - width/3 - width/7, height - height/4))
+    coords_image = bot_image.crop((width/3 + width/22, height/2, width - width/3 - width/9, height - height/4))
 
     return coords_image
 
@@ -100,14 +100,65 @@ def get_coordinate_string_from_image(image: Image.Image) -> str:
     ## Image preprocessing
     # Convert PIL Image to OpenCV format (BGR)
     open_cv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR) 
+
     # Convert the image to grayscale
     gray_image = cv2.cvtColor(open_cv_image, cv2.COLOR_BGR2GRAY)
+
     # Apply thresholding to emphasize digits
     _, thresh_image = cv2.threshold(gray_image, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
 
     image_text = pyt.image_to_string(thresh_image, lang='mc', config='--psm 6 tessedit_char_whitelist=0123456789')   
     
     return image_text
+
+def get_cardinal_char_from_image_colour(image: Image.Image) -> str:
+    """
+    Get the coordinates of VanillaTweaks HUD with image.
+    
+    ### Parameters
+        ``image``: PIL style image of active Minecraft window.
+        
+    ### Returns
+        ``image_text``: String containing player's X, Y and Z coordinates.
+    """
+    ## Image preprocessing
+    # Convert PIL Image to OpenCV format
+    open_cv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR) 
+
+    # Convert the image to HSV
+    hsv_image = cv2.cvtColor(open_cv_image, cv2.COLOR_BGR2HSV)
+
+    # Define range of orange color in HSV
+    lower_orange = np.array([30, 50, 50])  # Lower bound for orange in HSV
+    upper_orange = np.array([50, 255, 255])  # Upper bound for orange in HSV
+
+    # Threshold the HSV image to get only orange colors
+    orange_mask = cv2.inRange(hsv_image, lower_orange, upper_orange)
+
+    # Invert the mask to keep the Orange
+    orange_mask_inv = cv2.bitwise_not(orange_mask)
+
+    # Bitwise-AND mask and original image
+    isolated_orange = cv2.bitwise_and(open_cv_image, open_cv_image, mask=orange_mask_inv)
+
+    image_text = pyt.image_to_string(isolated_orange, lang='mc', config='--psm 6 tessedit_char_whitelist=NEWS')
+
+    return image_text
+
+def get_cardinal_from_string(coords: str) -> Union[str, bool]:
+    # split coordinate string with spaces
+    # if input is correct should have 3 indecies
+    coords_split = coords.split(' ')
+    if len(coords_split) < 3:
+        pass
+    if len(coords_split) > 3:
+        if len(coords_split[3]) == 2:
+            try:
+                direction = int(coords_split[3][0])  
+                if direction == 5:
+                    return 'S'
+            except ValueError:
+                return coords_split[3][0]
 
 def get_coordinate_from_string(coords: str) -> Union[np.ndarray, bool]:
     """
@@ -226,7 +277,6 @@ def set_new_coordinates_if_moving(first_coord: np.ndarray, second_coord: np.ndar
     elif not is_player_standing_still:
         third_coord = second_coord
         second_coord, incorrect_coords_counter = get_current_coordinates_error_handling((first_coord, second_coord, third_coord), incorrect_coords_counter)
-        print(second_coord)
         return second_coord, third_coord, incorrect_coords_counter
 
 if __name__=='__main__':
@@ -252,15 +302,19 @@ while True:
         # screenshot of window
         image = get_screenshot_active_window(bbox)
         # coordinate text from screenshot
-        coords = get_coordinate_string_from_image(image)
+        text_coords = get_coordinate_string_from_image(image)
+        # cardinal text from screenshot
+        text_cardinal = get_cardinal_char_from_image_colour(image)
+        # cardinal direction from string
+        cardinal = get_cardinal_from_string(text_cardinal)
 
-        first_coord = get_coordinate_from_string(coords)
+        first_coord = get_coordinate_from_string(text_coords)
         if first_coord is not None:
             try:
                 # New player coordinates
                 second_coord, third_coord, incorrect_coords_counter = set_new_coordinates_if_moving(first_coord, second_coord, third_coord, incorrect_coords_counter)
                 # Update player position
-                map.update_minimap(second_coord, chunk_range=2)
+                map.update_minimap(second_coord, chunk_range=2, direction=cardinal)
             except TypeError:
                 print("Something wrong")
                 pass
