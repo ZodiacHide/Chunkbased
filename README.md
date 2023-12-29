@@ -5,6 +5,8 @@ The game mode restricts the player to one chunk, a 16 by 16 block area, at a tim
 This ``Python`` project is not meant to physically restrict the player's movement in the game, but instead give the player a clear framework for which they can play the gamemode.
 
 ## Chunkbased is currently in development
+### Features
+- A minimap showing player's current position relative to their own and surrounding chunks including player's cardinal viewing direction.
 ### Planned features
 - A method to keep track of locked and unlocked chunks
 - A method to unlock chunks
@@ -16,5 +18,9 @@ This ``Python`` project is not meant to physically restrict the player's movemen
 
 ## Known issues
 - Incompatible with most game window resolution and aspect ratios different from 2576x1426, equivelant to playing the largest windowed size for a 2560x1440 monitor
-- Incorrect player position
-- Slow player position updates
+- - Slow player position updates
+- Incorrect or None cardinal viewing direction*
+- Incorrect player position*
+  
+***Rain in the game causes unreliable reading from the Vanilla Tweaks HUD**
+
