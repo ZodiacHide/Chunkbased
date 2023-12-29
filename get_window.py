@@ -18,7 +18,7 @@ Repository: https://github.com/ZodiacHide/Chunkbased
 class UnknownVersionError(TypeError):
     pass
 
-def checkWindowName(window_id: int) -> bool:
+def check_window_name_is_minecraft(window_id: int) -> bool:
     """
     Checks if target window is Minecraft.
 
@@ -45,7 +45,7 @@ def checkWindowName(window_id: int) -> bool:
     else:
         return False
 
-def takeScreenshot(bbox: tuple[int, int, int, int]) -> Image.Image:
+def get_screenshot_active_window(bbox: tuple[int, int, int, int]) -> Image.Image:
     """
     Takes an image capture of target window. Only works with windowed @2560x1440(2576x1426)
     ### Parameters
@@ -82,7 +82,7 @@ def takeScreenshot(bbox: tuple[int, int, int, int]) -> Image.Image:
 
     return coords_image
 
-def getImageText(image: Image.Image) -> str:
+def get_coordinate_string_from_image(image: Image.Image) -> str:
     """
     Get the coordinates of VanillaTweaks HUD with image.
     
@@ -105,7 +105,7 @@ def getImageText(image: Image.Image) -> str:
     
     return image_text
 
-def getCoords(coords: str) -> Union[np.ndarray, bool]:
+def get_coordinate_from_string(coords: str) -> Union[np.ndarray, bool]:
     """
     Returns X, Y and Z values from image.
     
@@ -126,18 +126,19 @@ def getCoords(coords: str) -> Union[np.ndarray, bool]:
     # if input is correct should have 3 indecies
     coords_split = coords.split(' ')
     if len(coords_split) < 3:
-        return False
-    
-    try:
-        x_pos = int(coords_split[0])
-        y_pos = int(coords_split[1])
-        z_pos = int(coords_split[2])
-    except ValueError:
-        return False
-    else:
-        return np.array([x_pos, y_pos, z_pos])
+        pass
+    else:  
+        try:
+            x_pos = int(coords_split[0])
+            y_pos = int(coords_split[1])
+            z_pos = int(coords_split[2])
+        except ValueError:
+            pass
+        else:
+            return np.array([x_pos, y_pos, z_pos])
 
-def processCoords(coords: np.ndarray, incorrect_coords_counter: int) -> tuple[np.ndarray, int]:
+def get_current_coordinates_error_handling(coords: tuple[Union[np.ndarray, bool], Union[np.ndarray, bool], Union[np.ndarray, bool]], 
+                                           incorrect_coords_counter: int) -> tuple[np.ndarray, int]:
     """
     Returns current coordinates.
 
@@ -186,6 +187,43 @@ def processCoords(coords: np.ndarray, incorrect_coords_counter: int) -> tuple[np
         
     return first_coord, incorrect_coords_counter
 
+def check_player_standing_still(first_coord: np.ndarray, second_coord: np.ndarray, third_coord: np.ndarray) -> bool:
+    """
+    Checks if the player is standing still.
+    """
+    if np.array_equal(first_coord, second_coord) and np.array_equal(first_coord, third_coord):
+        return True
+    else:
+        return False
+
+def set_new_coordinates_if_moving(first_coord: np.ndarray, second_coord: np.ndarray, 
+                                  third_coord: np.ndarray, incorrect_coords_counter: int
+                                  ) -> Union[tuple[np.ndarray, np.ndarray, int], bool]:
+    """
+    If the player is moving, update old coordinates.
+    """
+    is_player_standing_still = check_player_standing_still(first_coord, second_coord, third_coord)
+
+    # first_coord is False after program startup
+    # first_coord is False if poor data
+    # ignore in both cases
+    if first_coord is False or None:
+        pass
+    
+    # player standing still
+    # return first_coord
+    elif is_player_standing_still:
+        print("Standing still")
+        return first_coord, first_coord, incorrect_coords_counter
+    
+    # player is not moving
+    # update previous positions
+    elif not is_player_standing_still:
+        third_coord = second_coord
+        second_coord, incorrect_coords_counter = get_current_coordinates_error_handling((first_coord, second_coord, third_coord), incorrect_coords_counter)
+        print(second_coord)
+        return second_coord, third_coord, incorrect_coords_counter
+    
 if __name__=='__main__':
     axis = np.array(['X', 'Y', 'Z'])
     incorrect_coords_counter = 0
@@ -196,7 +234,7 @@ if __name__=='__main__':
 while True:
     window = GetForegroundWindow()
 
-    window_state = checkWindowName(window)
+    window_state = check_window_name_is_minecraft(window)
 
     if window_state:
         # Take screenshot to find coords
@@ -204,18 +242,24 @@ while True:
         # bounding box of window
         bbox = GetWindowRect(window)
         # screenshot of window
-        image = takeScreenshot(bbox)
+        image = get_screenshot_active_window(bbox)
         # coordinate text from screenshot
-        coords = getImageText(image)
+        coords = get_coordinate_string_from_image(image)
 
-        first_coord = getCoords(coords)
-        if first_coord is not False:
-            if not np.array_equal(first_coord, second_coord) and not np.array_equal(first_coord, second_coord):
-                result, incorrect_coords_counter = processCoords((first_coord, second_coord, third_coord), incorrect_coords_counter)
-                third_coord = second_coord
-                second_coord = result
-                print(result)
-            else:
-                print("Standing still")
+        first_coord = get_coordinate_from_string(coords)
+        if first_coord is not None:
+            try:
+                second_coord, third_coord, incorrect_coords_counter = set_new_coordinates_if_moving(first_coord, second_coord, third_coord, incorrect_coords_counter)
+            except TypeError:
+                print("Something wrong")
+                pass
+
+        # if first_coord is not False:
+            # if not check_player_standing_still(first_coord, second_coord, third_coord):
+            #     second_coord, incorrect_coords_counter = get_current_coordinates_error_handling((first_coord, second_coord, third_coord), incorrect_coords_counter)
+            #     third_coord = second_coord
+            #     print(second_coord)   
+            # else:
+            #     print("Standing still")
                 
     time.sleep(0.5)
