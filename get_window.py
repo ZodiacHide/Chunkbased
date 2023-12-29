@@ -1,9 +1,10 @@
 from win32gui import GetWindowText, GetForegroundWindow, SetForegroundWindow, GetWindowRect
-from PIL import ImageGrab
-import pytesseract as pyt
+from PIL import ImageGrab, Image
 import numpy as np
 import cv2
 import time
+from typing import Union
+import pytesseract as pyt
 pyt.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
 
 """
@@ -22,8 +23,8 @@ def checkWindowName(window_id: int) -> bool:
     Checks if target window is Minecraft.
 
     ### Parameters 
-    window_id: int
-        ID of target window"""
+        ``window_id``: ID of active window
+    """
     
     name_window = GetWindowText(window_id)
     
@@ -44,14 +45,13 @@ def checkWindowName(window_id: int) -> bool:
     else:
         return False
 
-def takeScreenshot(bbox: tuple[int, int, int, int]) -> ImageGrab:
+def takeScreenshot(bbox: tuple[int, int, int, int]) -> Image.Image:
     """
-    Takes an image capture of active window. Only works with windowed @2560x1440(2576x1426)
+    Takes an image capture of target window. Only works with windowed @2560x1440(2576x1426)
     ### Parameters
-        bbox: tuple
-            Bounding box of active window
+        ``bbox``: Bounding box of active window
     ### Returns
-        Image: PIL Image"""
+        ``coords_image``: PIL image of target window"""
     
     expected_width, expected_height = 2576, 1426
     # screengrab with bounding box
@@ -80,18 +80,18 @@ def takeScreenshot(bbox: tuple[int, int, int, int]) -> ImageGrab:
     width, height = bot_image.size
     coords_image = bot_image.crop((width/3 + width/22, height/2, width - width/3 - width/7, height - height/4))
 
-    # coords_image.show()
     return coords_image
 
-def getImageText(image: ImageGrab.grab) -> str:
+def getImageText(image: Image.Image) -> str:
     """
     Get the coordinates of VanillaTweaks HUD with image.
     
     ### Parameters
-        image: Image
+        ``image``: PIL style image of active Minecraft window.
         
     ### Returns
-        image_text: str"""
+        ``image_text``: String containing player's X, Y and Z coordinates.
+    """
     
     ## Image preprocessing
     # Convert PIL Image to OpenCV format (BGR)
@@ -105,21 +105,22 @@ def getImageText(image: ImageGrab.grab) -> str:
     
     return image_text
 
-def getCoords(coords: str) -> np.ndarray:
+def getCoords(coords: str) -> Union[np.ndarray, bool]:
     """
     Returns X, Y and Z values from image.
     
     ### Parameters
-        coords: str
+        ``coords``: String containing coordinates from OCR.
     ### Returns
-        np.array([x_pos, y_pos, z_pos]): np.ndarray
+        ``np.array([x_pos, y_pos, z_pos])``: Numpy array containing player's X, Y and Z coordinates.
     ### Variables
-        x_pos: int
+        ``x_pos``: ``int``
             X position of player
-        y_pos: int
+        ``y_pos``: ``int``
             Y position of player
-        z_pos: int
-            Z position of player"""
+        ``z_pos``: ``int``
+            Z position of player
+    """
     
     # split coordinate string with spaces
     # if input is correct should have 3 indecies
@@ -136,12 +137,20 @@ def getCoords(coords: str) -> np.ndarray:
     else:
         return np.array([x_pos, y_pos, z_pos])
 
-def processCoords(coords: np.ndarray, incorrect_coords_counter: int) -> np.ndarray:
+def processCoords(coords: np.ndarray, incorrect_coords_counter: int) -> tuple[np.ndarray, int]:
     """
-    Returns current coordinate if no significant coordinate variances to allow for continuity.
+    Returns current coordinates.
+
+    Does not return coordinates immediately if there's a large change in coordinate values. \n
     
     ### Parameters
-        coords: np.ndarray([first_coords, second_coord, third_coord])"""
+        ``coords``: ``np.ndarray([first_coord, second_coord, third_coord])``
+            Array containing arrays of X, Y and Z coordinates \n
+        ``incorrect_coords_counter``: ``int``
+            Counter keeping track of consecutive large position offsets. Initial value should always be zero.
+    ### Returns
+        ``tuple`` containing ``np.ndarray`` containing X, Y and Z coordinates for player's current position and counter for consecutive large position offsets.
+    """
     
     first_coord, second_coord, third_coord = coords
     # Verify all coordinates are arrays
